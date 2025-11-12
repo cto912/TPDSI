@@ -66,11 +66,12 @@ function App() {
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
-  // inicializo datosSismicos con estructura segura (backend puede enviar decision vacía)
   const [datosSismicos, setDatosSismicos] = useState({
     alcance: '',
     clasificacion: '',
-    origen: ''});
+    origen: '',
+    magnitud: ''
+  });
   const [loadingDatos, setLoadingDatos] = useState(false);
   const [opciones, setOpciones] = useState({
     alcance: [],
@@ -79,8 +80,10 @@ function App() {
   });
   const [decision, setDecision] = useState('');
   const [decisionError, setDecisionError] = useState('');
+  const [seriesTemporales, setSeriesTemporales] = useState([]);
+  const [isEditingDatos, setIsEditingDatos] = useState(false);
+  const [magnitudError, setMagnitudError] = useState('');
 
-  // Columnas que NO quieres mostrar en la tabla
   const hiddenColumns = ['id'];
 
   useEffect(() => {
@@ -89,6 +92,7 @@ function App() {
       setSelectedEvent(null);
       setShowEditForm(false);
       setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+      setSeriesTemporales([]);
 
       fetch("http://localhost:8080/api/pantalla/getESRev")
         .then((res) => {
@@ -170,28 +174,33 @@ function App() {
         });
 
         // Traer datos sísmicos y opciones en paralelo
-        const [datosRes, alcanceRes, clasifRes, origenRes] = await Promise.all([
+        const [datosRes, alcanceRes, clasifRes, origenRes, seriesRes] = await Promise.all([
           fetch('http://localhost:8080/api/pantalla/getDatosSismicos'),
           fetch('http://localhost:8080/api/pantalla/getAllAlcance'),
           fetch('http://localhost:8080/api/pantalla/getAllClasificacion'),
-          fetch('http://localhost:8080/api/pantalla/getAllOrigenDeGeneracion')
+          fetch('http://localhost:8080/api/pantalla/getAllOrigenDeGeneracion'),
+          fetch('http://localhost:8080/api/pantalla/getSeriesTemporales')
         ]);
 
         if (!datosRes.ok) throw new Error('Error al obtener datos sísmicos');
         if (!alcanceRes.ok) throw new Error('Error al obtener alcance');
         if (!clasifRes.ok) throw new Error('Error al obtener clasificación');
         if (!origenRes.ok) throw new Error('Error al obtener origen');
+        if (!seriesRes.ok) throw new Error('Error al obtener series temporales');
 
         const data = await datosRes.json();
         const dataAlcance = await alcanceRes.json();
         const dataClasificacion = await clasifRes.json();
         const dataOrigen = await origenRes.json();
+        const dataSeries = await seriesRes.json();
+
 
         // Normalizamos la respuesta para asegurarnos que decision siempre exista
         setDatosSismicos({
           alcance: data.alcance ?? '',
           clasificacion: data.clasificacion ?? '',
-          origen: data.origen ?? ''
+          origen: data.origen ?? '',
+          magnitud: selectedEvent.valorMagnitud
         });
 
         setOpciones({
@@ -200,14 +209,28 @@ function App() {
           origen: dataOrigen
         });
 
+        setSeriesTemporales(dataSeries);
+
         setShowEditForm(true);
+        setIsEditingDatos(false);
       } catch (error) {
         console.error('Error:', error);
         alert('Error al procesar la solicitud');
       } finally {
         setLoadingDatos(false);
       }
+
     }
+  };
+
+  const recargarEventos = () => {
+    fetch("http://localhost:8080/api/pantalla/getESRev")
+    .then((res) => {
+      if (!res.ok) throw new Error("Error al obtener los eventos sísmicos");
+      return res.json();
+    })
+    .then((data) => setEventos(data))
+    .catch((err) => console.error(err));
   };
 
   const handleSaveDatos = async () => {
@@ -216,8 +239,24 @@ function App() {
       setDecisionError('Debes seleccionar una decisión antes de guardar.');
       return;
     }
-
     setDecisionError('');
+
+    if (!datosSismicos.magnitud || datosSismicos.magnitud === null || datosSismicos.magnitud === undefined) {
+    setMagnitudError('La magnitud es obligatoria.');
+    return;
+    }
+    
+    const magnitudNum = parseFloat(datosSismicos.magnitud);
+    if (isNaN(magnitudNum)) {
+      setMagnitudError('La magnitud debe ser un número válido.');
+      return;
+    }
+    
+    if (magnitudNum < 0) {
+      setMagnitudError('La magnitud debe ser mayor o igual a 0.');
+      return;
+    }
+    setMagnitudError('');
 
     if(decision === "rechazar"){
       try {
@@ -238,6 +277,8 @@ function App() {
           setShowEditForm(false);
           setSelectedEvent(null);
           setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+          setIsEditingDatos(false)
+          recargarEventos();
         } catch (err) {
           console.error(err);
           alert('Error al guardar los datos: ' + err.message);
@@ -245,9 +286,19 @@ function App() {
     }
     if(decision === "confirmar"){
       console.log("CONFIRMADO")
+      setShowEditForm(false);
+      setSelectedEvent(null);
+      setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+      setIsEditingDatos(false)
+      recargarEventos();
     }
     if(decision === "solicitar_revision"){
       console.log("REVISION SOLICITADA")
+      setShowEditForm(false);
+      setSelectedEvent(null);
+      setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+      setIsEditingDatos(false)
+      recargarEventos();
     }
   };
 
@@ -261,6 +312,7 @@ function App() {
       setShowEditForm(false);
       setSelectedEvent(null);
       setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+      recargarEventos();
     } catch(error){
       console.error('Error al cancelar:', error);
       alert('Error al cancelar la operacion')
@@ -467,61 +519,163 @@ function App() {
                   <div className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Alcance
+                        Series Temporales
                       </label>
-                      <select
-                        value={datosSismicos.alcance}
-                        onChange={(e) => setDatosSismicos({...datosSismicos, alcance: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      >
-                        {opciones.alcance && opciones.alcance.length > 0 ? (
-                          opciones.alcance.map((opcion) => (
-                            <option key={opcion.id} value={opcion.nombre}>{opcion.nombre}</option>
-                          ))
-                        ) : (
-                          <option value="">Cargando...</option>
-                        )}
-                      </select>
+                      {seriesTemporales && seriesTemporales.length > 0 ? (
+                        <div className="space-y-4">
+                          {seriesTemporales.map((serie) => (
+                            <div key={serie.id} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <p className="text-sm text-gray-600">Código Estación:</p>
+                                  <p className="font-semibold">{serie.codigoEstacion}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Frecuencia de Muestreo:</p>
+                                  <p className="font-semibold">{serie.frecuenciaMuestreo} Hz</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Fecha de Registro:</p>
+                                  <p className="font-semibold">
+                                    {new Date(serie.fechaHoraRegistro).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-600">Condición de Alarma:</p>
+                                  <p className={`font-semibold ${serie.condicionAlarma ? 'text-red-600' : 'text-green-600'}`}>
+                                    {serie.condicionAlarma ? 'ACTIVA' : 'NORMAL'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {serie.muestras && serie.muestras.length > 0 && (
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Muestras:</p>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-gray-200">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left">Fecha/Hora</th>
+                                          <th className="px-3 py-2 text-left">Velocidad de onda</th>
+                                          <th className="px-3 py-2 text-left">Frecuencia de onda</th>
+                                          <th className="px-3 py-2 text-left">Longitud</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-200 bg-white">
+                                        {serie.muestras.map((muestra, idx) => (
+                                          <tr key={idx}>
+                                            <td className="px-3 py-2">
+                                              {new Date(muestra[0]).toLocaleString()}
+                                            </td>
+                                            <td className="px-3 py-2">{muestra[1][0]}</td>
+                                            <td className="px-3 py-2">{muestra[2][0]}</td>
+                                            <td className="px-3 py-2">{muestra[3][0]}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No hay series temporales disponibles</p>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Magnitud <span className="text-red-500">*</span>
+                      </label>
+                      {isEditingDatos ? (
+                        <div>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={datosSismicos.magnitud}
+                            onChange={(e) => setDatosSismicos({...datosSismicos, magnitud: e.target.value})}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            placeholder="Ingrese un valor mayor o igual a 0"
+                          />
+                          {magnitudError && (
+                            <p className="text-sm text-red-600 mt-2">{magnitudError}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
+                          <p className="text-gray-700">{datosSismicos.magnitud || 'No especificado'}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Alcance
+                      </label>
+                      {isEditingDatos ? (
+                        <select
+                          value={datosSismicos.alcance}
+                          onChange={(e) => setDatosSismicos({...datosSismicos, alcance: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                          {opciones.alcance && opciones.alcance.length > 0 ? (
+                            opciones.alcance.map((opcion) => (
+                              <option key={opcion.id} value={opcion.nombre}>{opcion.nombre}</option>
+                            ))
+                          ) : (
+                            <option value="">Cargando...</option>
+                          )}
+                        </select>
+                      ) : (
+                          <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
+                            <p className="text-gray-700">{datosSismicos.alcance || 'No especificado'}</p>
+                          </div>
+                        )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Clasificación
                       </label>
-                      <select
-                        value={datosSismicos.clasificacion}
-                        onChange={(e) => setDatosSismicos({...datosSismicos, clasificacion: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      >
-                        {opciones.clasificacion && opciones.clasificacion.length > 0 ? (
-                          opciones.clasificacion.map((opcion) => (
-                            <option key={opcion.id} value={opcion.nombre}>{opcion.nombre}</option>
-                          ))
-                        ) : (
-                          <option value="">Cargando...</option>
-                        )}
-                      </select>
+                      <p className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">{datosSismicos.clasificacion}</p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Origen
                       </label>
-                      <select
-                        // CORRECCIÓN: usar `origen` en lugar de `clasificacion`
-                        value={datosSismicos.origen}
-                        onChange={(e) => setDatosSismicos({...datosSismicos, origen: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      >
-                        {opciones.origen && opciones.origen.length > 0 ? (
-                          opciones.origen.map((opcion) => (
-                            <option key={opcion.id} value={opcion.nombre}>{opcion.nombre}</option>
-                          ))
-                        ) : (
-                          <option value="">Cargando...</option>
-                        )}
-                      </select>
+                      {isEditingDatos ? (
+                        <select
+                          value={datosSismicos.origen}
+                          onChange={(e) => setDatosSismicos({...datosSismicos, origen: e.target.value})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                          {opciones.origen && opciones.origen.length > 0 ? (
+                            opciones.origen.map((opcion) => (
+                              <option key={opcion.id} value={opcion.nombre}>{opcion.nombre}</option>
+                            ))
+                          ) : (
+                            <option value="">Cargando...</option>
+                          )}
+                        </select>
+                      ) : (
+                          <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
+                            <p className="text-gray-700">{datosSismicos.origen || 'No especificado'}</p>
+                          </div>
+                      )}
                     </div>
+
+                    {!isEditingDatos && (
+                      <div className="pt-2">
+                        <button
+                          onClick={() => setIsEditingDatos(true)}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
+                        >
+                          Editar Datos
+                        </button>
+                      </div>
+                    )}
 
                     {/* Sección de decisión (radios) */}
                     <div>

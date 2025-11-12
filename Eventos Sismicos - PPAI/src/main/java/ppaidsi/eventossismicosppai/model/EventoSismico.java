@@ -2,6 +2,11 @@ package ppaidsi.eventossismicosppai.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
+import ppaidsi.eventossismicosppai.model.state.Estado;
+import ppaidsi.eventossismicosppai.model.state.EstadoFactory;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -40,9 +45,11 @@ public class EventoSismico {
     @JoinColumn(name = "origenesDeGeneracion")
     private OrigenDeGeneracion origenDeGeneracion;
 
-    @ManyToOne()
-    @JoinColumn(name = "estados_id")
+    @Transient
     private Estado estadoActual;
+
+    @Column(name = "estado", nullable = false)
+    private String estadoNombre;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "cambiosEstado_id")
@@ -50,7 +57,7 @@ public class EventoSismico {
 
     public EventoSismico(LocalDateTime fechaHoraFin, LocalDateTime fechaHoraOcurrencia, double LatitudEpicentro, double LongitudEpicentro,
                          double latitudHipocentro, double longitudHipocentro, double valorMagnitud, ClasificacionSismo clasificacionSismo,
-                         AlcanceSismo alcanceSismo, OrigenDeGeneracion origenDeGeneracion, Estado estado, List<SerieTemporal> serieTemporal) {
+                         AlcanceSismo alcanceSismo, OrigenDeGeneracion origenDeGeneracion, String nombreEstado, List<SerieTemporal> serieTemporal) {
         this.fechaHoraFin = fechaHoraFin;
         this.fechaHoraOcurrencia = fechaHoraOcurrencia;
         this.latitudEpicentro = LatitudEpicentro;
@@ -61,9 +68,10 @@ public class EventoSismico {
         this.clasificacionSismo = clasificacionSismo;
         this.alcanceSismo = alcanceSismo;
         this.origenDeGeneracion = origenDeGeneracion;
-        this.estadoActual = estado;
+        this.estadoNombre = nombreEstado;
+        this.estadoActual = EstadoFactory.crear(nombreEstado);
         this.serieTemporal = serieTemporal;
-        this.crearCambioEstado(fechaHoraFin, estado);
+        this.crearCambioEstado(this.fechaHoraFin, this.estadoActual);
     }
 
     public void crearCambioEstado(LocalDateTime fechaHoraInicio, Estado estado){
@@ -84,16 +92,12 @@ public class EventoSismico {
         return estadoActual.sosPendienteDeRevision();
     }
 
-    public void bloquear(Estado estado, LocalDateTime fechaHoraActual){
-        setEstadoActual(estado);
+    public void revisar(LocalDateTime fechaHoraActual){
+        estadoActual.revisar(fechaHoraActual, this.cambioEstado, this);
+    }
 
-        for (CambioEstado cambioEstado1 : this.cambioEstado) {
-            if (cambioEstado1.esEstadoActual()){
-                cambioEstado1.setFechaHoraFin(fechaHoraActual);
-            }
-        }
-
-        crearCambioEstado(estado, fechaHoraActual);
+    public void addCambioDeEstado(CambioEstado cambioEstado){
+        this.cambioEstado.add(cambioEstado);
     }
 
     public void crearCambioEstado(Estado estado, LocalDateTime fechaHoraInicio){
@@ -104,7 +108,8 @@ public class EventoSismico {
     public String toString(){
         return  "Evento sismico Id: " + id + "\n" +
                 "Fecha y hora de ocurrencia: " + fechaHoraOcurrencia + "\n" +
-                "Valor de magnitud: " + valorMagnitud;
+                "Valor de magnitud: " + valorMagnitud + "\n" +
+                "Estado: " + estadoNombre;
 
     }
 
@@ -131,22 +136,44 @@ public class EventoSismico {
         crearCambioEstado(estado, fechaHoraActual);
     }
 
-    public void obtenerSeriesTemporales(){
+    public List<SeriesTemporalesDTO> obtenerSeriesTemporales(){
+        List<SeriesTemporalesDTO> seriesTemporales = new ArrayList<>();
         for (SerieTemporal serieTemporal : serieTemporal) {
-            serieTemporal.getDatos();
+            seriesTemporales.add(serieTemporal.getDatos());
         }
+        return seriesTemporales;
     }
 
-    public void rechazar(Estado estado, LocalDateTime fechaHoraActual, Empleado analista){
-        setEstadoActual(estado);
-        for (CambioEstado cambioEstado1 : this.cambioEstado) {
-            if (cambioEstado1.esEstadoActual()){
-                cambioEstado1.setFechaHoraFin(fechaHoraActual);
-            }
+    public List<Object> obtenerEstacionSismologica(){
+        List<Object> datos = new ArrayList<>();
+        for (SerieTemporal serieTemporal : serieTemporal) {
+            datos.add(serieTemporal.obtenerEstacionSismologica());
         }
-        crearCambioEstado(fechaHoraActual, estado, analista);
+        return datos;
+    }
+
+    public void rechazar(LocalDateTime fechaHoraActual, Empleado analista){
+        estadoActual.rechazar(fechaHoraActual, this.cambioEstado, this, analista);
+    }
+
+    public void setEstado(Estado estado){
+        this.estadoActual = estado;
+        this.estadoNombre = estado.getNombre();
+    }
+
+    public Estado getEstado(){
+        if (estadoActual == null){
+            estadoActual = EstadoFactory.crear(estadoNombre);
+        }
+        return estadoActual;
     }
 
 
+    @PostLoad
+    private void initEstado(){
+        if (estadoActual == null && estadoNombre != null) {
+            estadoActual = EstadoFactory.crear(estadoNombre);
+        }
+    }
 
 }

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ppaidsi.eventossismicosppai.DTO.DatosSismicosDTO;
 import ppaidsi.eventossismicosppai.DTO.EventoSismicoDTO;
+import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
 import ppaidsi.eventossismicosppai.DTO.UsuarioDTO;
 import ppaidsi.eventossismicosppai.model.AlcanceSismo;
 import ppaidsi.eventossismicosppai.model.ClasificacionSismo;
@@ -49,7 +50,6 @@ public class PantallaController {
 
     @PostMapping("/postESRev")
     public  ResponseEntity<String> recibirEventoSismico(@RequestBody EventoSismicoDTO eventoSismicoDTO) {
-        System.out.println("Evnto recibido: " + eventoSismicoDTO);
         pantallaEventoSismico.tomarSeleccionES(eventoSismicoDTO.getId());
         return ResponseEntity.ok("Evento recibido correctamente");
     }
@@ -61,7 +61,6 @@ public class PantallaController {
 
     @PostMapping("/postCambios")
     public ResponseEntity<String> recibirDatosSismicos(@RequestBody DatosSismicosDTO datosSismicoDTO) {
-        System.out.println("Evnto recibido: " + datosSismicoDTO);
         return ResponseEntity.ok("Evento recibido correctamente");
     }
 
@@ -82,14 +81,12 @@ public class PantallaController {
 
     @PutMapping("/rechazarEvento")
     public ResponseEntity<String> rechazarEvento(@RequestBody DatosSismicosDTO datosSismicoDTO) {
-        System.out.println("Rechazo recibido: " + datosSismicoDTO);
         pantallaEventoSismico.tomarOpcionRechazarEvento(datosSismicoDTO);
         return ResponseEntity.ok("Rechazo recibido correctamente");
     }
 
     @DeleteMapping("/cancelar")
     public ResponseEntity<String> cancelar(){
-        System.out.println("Evnto cancelar");
         pantallaEventoSismico.tomarOpcionCancelar();
         return ResponseEntity.ok("Ok");
     }
@@ -104,9 +101,13 @@ public class PantallaController {
 
     @PutMapping("/cerrarSesion")
     public ResponseEntity<String> cerrarSesion(@RequestBody UsuarioDTO usuarioDTO){
-        System.out.println("Evnto cerrarSesion");
         pantallaEventoSismico.cerrarSesion(usuarioDTO.getUserName(), usuarioDTO.getPassword());
         return ResponseEntity.ok("Ok");
+    }
+
+    @GetMapping("/getSeriesTemporales")
+    public ResponseEntity<List<SeriesTemporalesDTO>> getSeriesTemporales() {
+        return ResponseEntity.ok(pantallaEventoSismico.getSeriesTemporales());
     }
 
 }

@@ -29,4 +29,9 @@ public class Sismografo {
         this.nroSerie = nroSerie;
         this.estacionSismologica = estacionSismologica;
     }
+
+    public String getEstacionSismologica(){
+        return estacionSismologica.getCodigoEstacion();
+    }
+
 }

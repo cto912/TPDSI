@@ -2,6 +2,8 @@ package ppaidsi.eventossismicosppai.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -43,15 +45,17 @@ public class SerieTemporal {
         this.muestraSismica.add(muestraSismica);
     }
 
-    public void getDatos(){
-        List<Object> datos = new ArrayList<>();
-        datos.add(id);
-        datos.add(condicionAlarma);
-        datos.add(fechaHoraRegistro);
-        datos.add(frecuenciaMuestreo);
+    public SeriesTemporalesDTO getDatos(){
+        List<Object> muestras = new ArrayList<>();
         for (MuestraSismica muestraSismica : muestraSismica) {
-            datos.add(muestraSismica.getDatos());
+            muestras.add(muestraSismica.getDatos());
         }
+        String codigoEstacion = this.obtenerEstacionSismologica();
+        return new SeriesTemporalesDTO(id, codigoEstacion, condicionAlarma, fechaHoraRegistro, frecuenciaMuestreo, muestras);
+    }
+
+    public String obtenerEstacionSismologica(){
+        return sismografo.getEstacionSismologica();
     }
 
 }

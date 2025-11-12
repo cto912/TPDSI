@@ -5,8 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ppaidsi.eventossismicosppai.DTO.DatosSismicosDTO;
 import ppaidsi.eventossismicosppai.DTO.EventoSismicoDTO;
-import ppaidsi.eventossismicosppai.service.EstadoService;
-import ppaidsi.eventossismicosppai.service.EventoSismicoService;
+import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
 
 import java.util.*;
 
@@ -39,7 +38,7 @@ public class PantallaEventoSismico {
     }
 
     public void tomarOpcionCancelar(){
-        gestor.liberarES();
+        gestor.tomarOpcionCancelar();
     }
 
     public boolean iniciarSesion(String userName, String password) {
@@ -48,5 +47,9 @@ public class PantallaEventoSismico {
 
     public void cerrarSesion(String userName, String password) {
         gestor.cerrarSesion(userName, password);
+    }
+
+    public List<SeriesTemporalesDTO> getSeriesTemporales(){
+        return gestor.recorrerSeriesTemporales();
     }
 }

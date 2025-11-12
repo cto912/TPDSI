@@ -14,4 +14,5 @@ public class DatosSismicosDTO {
     private String alcance;
     private String clasificacion;
     private String origen;
+    private double magnitud;
 }

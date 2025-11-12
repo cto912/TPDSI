@@ -15,7 +15,7 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDataBase(EmpleadoRepo empleadoRepo, SesionRepo sesionRepo, EventoSismicoRepo eventoSismicoRepo, UsuarioRepo usuarioRepo,
                                    TipoDeDatoRepo tipoDeDatoRepo, AlcanceSismoRepo alcanceSismoRepo, ClasificacionSismoRepo clasificacionSismoRepo,
-                                   OrigenDeGeneracionRepo origenDeGeneracionRepo, EstadoRepo estadoRepo, EstacionSismologicaRepo estacionSismologicaRepo,
+                                   OrigenDeGeneracionRepo origenDeGeneracionRepo, EstacionSismologicaRepo estacionSismologicaRepo,
                                    SismografoRepo sismografoRepo) {
         return args -> {
 
@@ -52,6 +52,18 @@ public class DataInitializer {
             DetalleMuestraSismica detalleMuestra132 = new DetalleMuestraSismica(7.99, frecuenciaDeOnda);
             DetalleMuestraSismica detalleMuestra133 = new DetalleMuestraSismica(0.98, longitud);
 
+            DetalleMuestraSismica detalleMuestra211 = new DetalleMuestraSismica(8, velocidadDeOnda);
+            DetalleMuestraSismica detalleMuestra212 = new DetalleMuestraSismica(7.33, frecuenciaDeOnda);
+            DetalleMuestraSismica detalleMuestra213 = new DetalleMuestraSismica(1.3, longitud);
+
+            DetalleMuestraSismica detalleMuestra221 = new DetalleMuestraSismica(7.93, velocidadDeOnda);
+            DetalleMuestraSismica detalleMuestra222 = new DetalleMuestraSismica(8, frecuenciaDeOnda);
+            DetalleMuestraSismica detalleMuestra223 = new DetalleMuestraSismica(1, longitud);
+
+            DetalleMuestraSismica detalleMuestra231 = new DetalleMuestraSismica(8.03, velocidadDeOnda);
+            DetalleMuestraSismica detalleMuestra232 = new DetalleMuestraSismica(7.99, frecuenciaDeOnda);
+            DetalleMuestraSismica detalleMuestra233 = new DetalleMuestraSismica(0.98, longitud);
+
             //------------------------------------------MUESTRAS SISMICAS------------------------------------------------------------------------
             MuestraSismica muestraSismica11 = new MuestraSismica(LocalDateTime.of(2025, 2, 21, 19, 5, 41),
                                                                  List.of(detalleMuestra11, detalleMuestra12, detalleMuestra13));
@@ -67,14 +79,27 @@ public class DataInitializer {
             MuestraSismica muestraSismica23 = new MuestraSismica(LocalDateTime.now().plusSeconds(20),
                                                                  List.of(detalleMuestra131, detalleMuestra132, detalleMuestra133));
 
+            MuestraSismica muestraSismica31 = new MuestraSismica(LocalDateTime.now(),
+                                                                 List.of(detalleMuestra211, detalleMuestra212, detalleMuestra213));
+            MuestraSismica muestraSismica32 = new MuestraSismica(LocalDateTime.now().plusSeconds(10),
+                                                                 List.of(detalleMuestra221, detalleMuestra222, detalleMuestra223));
+            MuestraSismica muestraSismica33 = new MuestraSismica(LocalDateTime.now().plusSeconds(20),
+                                                                 List.of(detalleMuestra231, detalleMuestra232, detalleMuestra233));
+
+
             //------------------------------------------ESTACIONES SISMOLOGICAS------------------------------------------------------------------------
             EstacionSismologica estacionSismologica1 = new EstacionSismologica("ABC123", "CERTIFICADO.PDF", LocalDateTime.of(2020, 10, 21, 0, 0),
                                                                                 205.4, 405.4, "Estacion Mina Clavero", 134);
+            EstacionSismologica estacionSismologica2 = new EstacionSismologica("DEF456", "CERTIFICADO.PDF", LocalDateTime.of(2020, 10, 21, 0, 0),
+                                                                                205.4, 405.4, "Estacion Mina Clavero", 134);
             estacionSismologicaRepo.save(estacionSismologica1);
+            estacionSismologicaRepo.save(estacionSismologica2);
 
             //------------------------------------------SISMOGRAFOS------------------------------------------------------------------------
             Sismografo sismografo1 = new Sismografo(LocalDateTime.of(2021, 8, 17, 0, 0), "SIS23", "QWE23RTY", estacionSismologica1);
+            Sismografo sismografo2 = new Sismografo(LocalDateTime.of(2021, 8, 17, 0, 0), "SIS23", "QWE23RTY", estacionSismologica2);
             sismografoRepo.save(sismografo1);
+            sismografoRepo.save(sismografo2);
 
             //------------------------------------------SERIES TEMPORALES------------------------------------------------------------------------
             SerieTemporal serieTemporal1 = new SerieTemporal(false, LocalDateTime.of(2025, 2, 21, 19, 5, 41),
@@ -83,6 +108,9 @@ public class DataInitializer {
             SerieTemporal serieTemporal2 = new SerieTemporal(false, LocalDateTime.now(),
                                                              LocalDateTime.now(), 50, sismografo1,
                                                              List.of(muestraSismica21, muestraSismica22, muestraSismica23));
+            SerieTemporal serieTemporal3 = new SerieTemporal(false, LocalDateTime.now(),
+                                                             LocalDateTime.now(), 50, sismografo2,
+                                                             List.of(muestraSismica31, muestraSismica32, muestraSismica33));
 
             //------------------------------------------USUARIOS------------------------------------------------------------------------
             Usuario usuario1 = new Usuario("analista1", "analista1");
@@ -95,16 +123,6 @@ public class DataInitializer {
             empleadoRepo.save(empleado1);
 
             //------------------------------------------ESTADOS------------------------------------------------------------------------
-            Estado autoDetectado = new Estado("AutoDetectado","EventoSismico");
-            Estado bloqueadoEnRevision = new Estado("BloqueadoEnRevision","EventoSismico");
-            Estado pendienteDeRevision = new Estado("PendienteDeRevision","EventoSismico");
-            Estado rechazado = new Estado("Rechazado","EventoSismico");
-            Estado confirmado = new Estado("Confirmado","EventoSismico");
-            estadoRepo.save(autoDetectado);
-            estadoRepo.save(bloqueadoEnRevision);
-            estadoRepo.save(pendienteDeRevision);
-            estadoRepo.save(rechazado);
-            estadoRepo.save(confirmado);
 
             //------------------------------------------CLASIFICACIONES------------------------------------------------------------------------
             ClasificacionSismo superficial = new ClasificacionSismo(0, 60, "Superficial");
@@ -135,10 +153,10 @@ public class DataInitializer {
 
             //------------------------------------------EVENTOS SISMICOS------------------------------------------------------------------------
             EventoSismico eventoSismico1 = new EventoSismico(LocalDateTime.of(2025, 2, 21, 19, 6, 13), LocalDateTime.of(2025, 2, 21, 19, 5, 41),
-                                                             303.45, 269.76, 405.79, 419.89, 3.3, superficial, local, origenDeGeneracion4, pendienteDeRevision,
-                                                             List.of(serieTemporal1));
+                                                             303.45, 269.76, 405.79, 419.89, 3.3, superficial, local, origenDeGeneracion4, "PendienteDeRevision",
+                                                             List.of(serieTemporal1, serieTemporal3));
             EventoSismico eventoSismico2 = new EventoSismico(LocalDateTime.now().plusMinutes(1), LocalDateTime.now(),
-                                                             205.33, 386.26, 419.89, 405.79, 3.8, superficial, local, origenDeGeneracion4, autoDetectado,
+                                                             205.33, 386.26, 419.89, 405.79, 3.8, superficial, local, origenDeGeneracion4, "AutoDetectado",
                                                              List.of(serieTemporal2));
             eventoSismicoRepo.save(eventoSismico1);
             eventoSismicoRepo.save(eventoSismico2);
