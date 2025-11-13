@@ -16,27 +16,45 @@ public abstract class Estado {
     protected Estado() {
     }
 
-    public abstract boolean sosAutoDetectado();
+    public boolean sosAutoDetectado(){
+        return false;
+    }
 
-    public abstract boolean sosPendienteDeRevision();
+    public boolean sosPendienteDeRevision(){
+        return false;
+    }
 
-    public abstract boolean sosBloqueadoEnRevision();
+    public void revisar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico){
+        throw new UnsupportedOperationException("No se puede revisar desde el estado: " + nombre);
+    }
 
-    public abstract boolean sosRechazado();
+    public void rechazar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico, Empleado empleado){
+        throw new UnsupportedOperationException("No se puede rechazar desde el estado: " + nombre);
+    }
 
-    public abstract void revisar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico);
+    public void confirmar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico, Empleado empleado){
+        throw new UnsupportedOperationException("No se puede confirmar desde el estado: " + nombre);
+    }
 
-    public abstract BloqueadoEnRevision crearEstadoBloqueadoEnRevision();
+    public void derivar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico, Empleado empleado){
+        throw new UnsupportedOperationException("No se puede derivar desde el estado: " + nombre);
+    }
 
-    public abstract CambioEstado crearCambioDeEstado(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, Estado estado);
+    public void adquirirDatos(){
+        throw new UnsupportedOperationException("No se puede adquirir datos desde el estado: " + nombre);
+    }
 
-    public abstract CambioEstado crearCambioDeEstado(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, Estado estado, Empleado empleado);
+    public void anular(){
+        throw new UnsupportedOperationException("No se puede anular desde el estado: " + nombre);
+    }
 
-    public abstract void rechazar(LocalDateTime fechaHoraActual, List<CambioEstado> cambioEstadoList, EventoSismico eventoSismico, Empleado empleado);
+    public void controlarTiempo(){
+        throw new UnsupportedOperationException("No se puede controlar el tiempo desde el estado: " + nombre);
+    }
 
-    public abstract Rechazado crearEstadoRechazado();
-
-
+    public void cerrar(){
+        throw new UnsupportedOperationException("No se puede cerrar desde el estado: " + nombre);
+    }
 
     protected void setNombre(String nombre) {
         this.nombre = nombre;

@@ -6,7 +6,6 @@ import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
 import ppaidsi.eventossismicosppai.model.state.Estado;
 import ppaidsi.eventossismicosppai.model.state.EstadoFactory;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -51,7 +50,7 @@ public class EventoSismico {
     @Column(name = "estado", nullable = false)
     private String estadoNombre;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "cambiosEstado_id")
     private List<CambioEstado> cambioEstado = new ArrayList<>();
 
@@ -71,17 +70,7 @@ public class EventoSismico {
         this.estadoNombre = nombreEstado;
         this.estadoActual = EstadoFactory.crear(nombreEstado);
         this.serieTemporal = serieTemporal;
-        this.crearCambioEstado(this.fechaHoraFin, this.estadoActual);
-    }
-
-    public void crearCambioEstado(LocalDateTime fechaHoraInicio, Estado estado){
-        CambioEstado cambioEstado = new CambioEstado(estado, fechaHoraInicio);
-        this.cambioEstado.add(cambioEstado);
-    }
-
-    public void crearCambioEstado(LocalDateTime fechaHoraInicio, Estado estado, Empleado empleado){
-        CambioEstado cambioEstado = new CambioEstado(estado, empleado ,fechaHoraInicio);
-        this.cambioEstado.add(cambioEstado);
+        addCambioDeEstado(new CambioEstado(estadoNombre, null, fechaHoraOcurrencia));
     }
 
     public boolean estasAutoDetectado(){
@@ -100,19 +89,6 @@ public class EventoSismico {
         this.cambioEstado.add(cambioEstado);
     }
 
-    public void crearCambioEstado(Estado estado, LocalDateTime fechaHoraInicio){
-        CambioEstado cambioEstado = new CambioEstado(estado, fechaHoraInicio);
-        this.cambioEstado.add(cambioEstado);
-    }
-
-    public String toString(){
-        return  "Evento sismico Id: " + id + "\n" +
-                "Fecha y hora de ocurrencia: " + fechaHoraOcurrencia + "\n" +
-                "Valor de magnitud: " + valorMagnitud + "\n" +
-                "Estado: " + estadoNombre;
-
-    }
-
     public String getAlcance(){
         return  alcanceSismo.getNombre();
     }
@@ -125,31 +101,12 @@ public class EventoSismico {
         return origenDeGeneracion.getNombre();
     }
 
-    public void setAsPendienteDeRevision(Estado estado, LocalDateTime fechaHoraActual){
-        setEstadoActual(estado);
-
-        for (CambioEstado cambioEstado1 : this.cambioEstado) {
-            if (cambioEstado1.esEstadoActual()){
-                cambioEstado1.setFechaHoraFin(fechaHoraActual);
-            }
-        }
-        crearCambioEstado(estado, fechaHoraActual);
-    }
-
     public List<SeriesTemporalesDTO> obtenerSeriesTemporales(){
         List<SeriesTemporalesDTO> seriesTemporales = new ArrayList<>();
         for (SerieTemporal serieTemporal : serieTemporal) {
             seriesTemporales.add(serieTemporal.getDatos());
         }
         return seriesTemporales;
-    }
-
-    public List<Object> obtenerEstacionSismologica(){
-        List<Object> datos = new ArrayList<>();
-        for (SerieTemporal serieTemporal : serieTemporal) {
-            datos.add(serieTemporal.obtenerEstacionSismologica());
-        }
-        return datos;
     }
 
     public void rechazar(LocalDateTime fechaHoraActual, Empleado analista){
@@ -166,6 +123,14 @@ public class EventoSismico {
             estadoActual = EstadoFactory.crear(estadoNombre);
         }
         return estadoActual;
+    }
+
+    public void confirmar(LocalDateTime fechaHoraActual, Empleado analista){
+        estadoActual.confirmar(fechaHoraActual, this.cambioEstado, this, analista);
+    }
+
+    public void derivar(LocalDateTime fechaHoraActual, Empleado analista){
+        estadoActual.derivar(fechaHoraActual, this.cambioEstado, this, analista);
     }
 
 

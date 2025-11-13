@@ -70,7 +70,8 @@ function App() {
     alcance: '',
     clasificacion: '',
     origen: '',
-    magnitud: ''
+    magnitud: '',
+    seriesTemporales: ''
   });
   const [loadingDatos, setLoadingDatos] = useState(false);
   const [opciones, setOpciones] = useState({
@@ -166,33 +167,28 @@ function App() {
       setLoadingDatos(true);
 
       try {
-        // Primero: POST del evento seleccionado
         await fetch('http://localhost:8080/api/pantalla/postESRev', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: selectedEvent.id })
         });
 
-        // Traer datos sísmicos y opciones en paralelo
-        const [datosRes, alcanceRes, clasifRes, origenRes, seriesRes] = await Promise.all([
+        const [datosRes, alcanceRes, clasifRes, origenRes] = await Promise.all([
           fetch('http://localhost:8080/api/pantalla/getDatosSismicos'),
           fetch('http://localhost:8080/api/pantalla/getAllAlcance'),
           fetch('http://localhost:8080/api/pantalla/getAllClasificacion'),
           fetch('http://localhost:8080/api/pantalla/getAllOrigenDeGeneracion'),
-          fetch('http://localhost:8080/api/pantalla/getSeriesTemporales')
         ]);
 
         if (!datosRes.ok) throw new Error('Error al obtener datos sísmicos');
         if (!alcanceRes.ok) throw new Error('Error al obtener alcance');
         if (!clasifRes.ok) throw new Error('Error al obtener clasificación');
         if (!origenRes.ok) throw new Error('Error al obtener origen');
-        if (!seriesRes.ok) throw new Error('Error al obtener series temporales');
 
         const data = await datosRes.json();
         const dataAlcance = await alcanceRes.json();
         const dataClasificacion = await clasifRes.json();
         const dataOrigen = await origenRes.json();
-        const dataSeries = await seriesRes.json();
 
 
         // Normalizamos la respuesta para asegurarnos que decision siempre exista
@@ -209,7 +205,7 @@ function App() {
           origen: dataOrigen
         });
 
-        setSeriesTemporales(dataSeries);
+        setSeriesTemporales(data.seriesTemporales || []);
 
         setShowEditForm(true);
         setIsEditingDatos(false);
@@ -260,7 +256,6 @@ function App() {
 
     if(decision === "rechazar"){
       try {
-          // Ajustá el endpoint/método según tu API real
           const res = await fetch('http://localhost:8080/api/pantalla/rechazarEvento', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -272,7 +267,6 @@ function App() {
             throw new Error(`Error backend: ${res.status} ${text}`);
           }
 
-          // Si querés, procesar la respuesta (ej: mostrar notificación)
           alert('Datos guardados correctamente');
           setShowEditForm(false);
           setSelectedEvent(null);
@@ -285,20 +279,52 @@ function App() {
         }
     }
     if(decision === "confirmar"){
-      console.log("CONFIRMADO")
-      setShowEditForm(false);
-      setSelectedEvent(null);
-      setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
-      setIsEditingDatos(false)
-      recargarEventos();
+      try {
+          const res = await fetch('http://localhost:8080/api/pantalla/confirmarEvento', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosSismicos)
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Error backend: ${res.status} ${text}`);
+          }
+
+          alert('Datos guardados correctamente');
+          setShowEditForm(false);
+          setSelectedEvent(null);
+          setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+          setIsEditingDatos(false)
+          recargarEventos();
+        } catch (err) {
+          console.error(err);
+          alert('Error al guardar los datos: ' + err.message);
+        }
     }
     if(decision === "solicitar_revision"){
-      console.log("REVISION SOLICITADA")
-      setShowEditForm(false);
-      setSelectedEvent(null);
-      setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
-      setIsEditingDatos(false)
-      recargarEventos();
+      try {
+          const res = await fetch('http://localhost:8080/api/pantalla/derivarEvento', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosSismicos)
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Error backend: ${res.status} ${text}`);
+          }
+
+          alert('Datos guardados correctamente');
+          setShowEditForm(false);
+          setSelectedEvent(null);
+          setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+          setIsEditingDatos(false)
+          recargarEventos();
+        } catch (err) {
+          console.error(err);
+          alert('Error al guardar los datos: ' + err.message);
+        }
     }
   };
 

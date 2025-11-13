@@ -22,10 +22,4 @@ public class AlcanceSismo {
         this.nombre = nombre;
     }
 
-    public AlcanceSismo sosEsteAlcance(String nombre) {
-        if (nombre.equals(this.nombre)) {
-            return this;
-        }
-        return null;
-    }
 }

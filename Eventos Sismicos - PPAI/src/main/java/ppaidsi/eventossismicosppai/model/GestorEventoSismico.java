@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 import ppaidsi.eventossismicosppai.DTO.DatosSismicosDTO;
 import ppaidsi.eventossismicosppai.DTO.EventoSismicoDTO;
 import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
-import ppaidsi.eventossismicosppai.model.state.Estado;
 import ppaidsi.eventossismicosppai.service.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +29,7 @@ public class GestorEventoSismico {
     private Sesion sesionActual;
     private String userNameActual;
     private Empleado analistaLogueado;
+    private int idEventoSismicoSeleccionado;
 
     public GestorEventoSismico(EventoSismicoService eventosSismicoService,
                                UsuarioService usuarioService, SesionService sesionService,
@@ -64,7 +64,9 @@ public class GestorEventoSismico {
     public List<EventoSismicoDTO> opcionRegResRevMan(){
         List<EventoSismicoDTO> infoMostrar = new ArrayList<>();
         List<EventoSismico> allEventosSismicos = eventosSismicoService.getAll();
-        this.buscarEventosSismicos(allEventosSismicos);
+
+        buscarEventosSismicos(allEventosSismicos);
+
         eventosSismicos.forEach(eventosSismico -> {
             int id = eventosSismico.getId();
             LocalDateTime fechaHoraOcurrencia = eventosSismico.getFechaHoraOcurrencia();
@@ -81,25 +83,12 @@ public class GestorEventoSismico {
         return infoMostrar;
     }
 
-    public DatosSismicosDTO tomarSeleccionES(int idEvento){
-        this.eventoSismicoSeleccionado = eventosSismicos.stream()
-                                                        .filter(e -> e.getId() == idEvento)
-                                                        .findFirst()
-                                                        .orElse(null);
-        bloquearEs(eventoSismicoSeleccionado);
-        buscarDatosSismicos();
-        return new DatosSismicosDTO(eventoSismicoSeleccionado.getId(), nombreAlcance, nombreClasificacion, nombreOrigen, 0);
-    }
-
-
-    public void bloquearEs(EventoSismico eventosSismico){
-        getFechaHoraActual();
-        eventosSismico.revisar(fechaHoraActual);
-        eventosSismicoService.save(eventosSismico);
-    }
-
     public void getFechaHoraActual(){
         fechaHoraActual=LocalDateTime.now();
+    }
+
+    public void generarSismograma(){
+        //NO HACE NADA
     }
 
     public void buscarDatosSismicos(){
@@ -119,16 +108,12 @@ public class GestorEventoSismico {
         return seriesTemporales;
     }
 
+    //FALTA ESTA PARTE
     public void tomarOpcionCancelar(){
         cancelarCU();
     }
 
     public void cancelarCU(){
-    }
-
-    public void tomarOpcionRechazarEvento(DatosSismicosDTO datosSismicosDTO){
-        validarDatos(datosSismicosDTO);
-        rechazarES();
     }
 
     public void validarDatos(DatosSismicosDTO datosSismicosDTO){
@@ -155,14 +140,6 @@ public class GestorEventoSismico {
         }else {
             System.out.println("ERROR! ALCANCE Y/O ORIGEN NO EXISTE");
         }
-    }
-
-
-    public void rechazarES(){
-        getFechaHoraActual();
-        buscarAnalistaLogueado();
-        eventoSismicoSeleccionado.rechazar(fechaHoraActual, analistaLogueado);
-        eventosSismicoService.save(eventoSismicoSeleccionado);
     }
 
     public boolean iniciarSesion(String username, String password){
@@ -217,6 +194,65 @@ public class GestorEventoSismico {
 
     public void buscarUsuario(){
         userNameActual = sesionActual.conocerUsuario();
+    }
+
+    public void tomarOpcionConfirmar(DatosSismicosDTO datosSismicosDTO){
+        this.eventoSismicoSeleccionado = eventosSismicoService.getById(idEventoSismicoSeleccionado);
+        validarDatos(datosSismicosDTO);
+        confirmarES();
+    }
+
+    public void tomarOpcionDerivarES(DatosSismicosDTO datosSismicosDTO){
+        this.eventoSismicoSeleccionado = eventosSismicoService.getById(idEventoSismicoSeleccionado);
+        validarDatos(datosSismicosDTO);
+        derivarES();
+    }
+
+    public void tomarOpcionRechazarEvento(DatosSismicosDTO datosSismicosDTO){
+        this.eventoSismicoSeleccionado = eventosSismicoService.getById(idEventoSismicoSeleccionado);
+        validarDatos(datosSismicosDTO);
+        rechazarES();
+    }
+
+    public DatosSismicosDTO tomarSeleccionES(int idEvento){
+        this.idEventoSismicoSeleccionado = idEvento;
+        this.eventoSismicoSeleccionado = eventosSismicos.stream()
+                .filter(e -> e.getId() == idEvento)
+                .findFirst()
+                .orElse(null);
+        assert eventoSismicoSeleccionado != null;
+        bloquearEs(eventoSismicoSeleccionado);
+        buscarDatosSismicos();
+        List<SeriesTemporalesDTO> seriesTemporales = recorrerSeriesTemporales();
+        generarSismograma();
+        return new DatosSismicosDTO(eventoSismicoSeleccionado.getId(), nombreAlcance, nombreClasificacion, nombreOrigen, 0, seriesTemporales);
+    }
+
+    public void confirmarES(){
+        getFechaHoraActual();
+        buscarAnalistaLogueado();
+        eventoSismicoSeleccionado.confirmar(fechaHoraActual, analistaLogueado);
+        eventosSismicoService.save(eventoSismicoSeleccionado);
+    }
+
+    public void derivarES(){
+        getFechaHoraActual();
+        buscarAnalistaLogueado();
+        eventoSismicoSeleccionado.derivar(fechaHoraActual, analistaLogueado);
+        eventosSismicoService.save(eventoSismicoSeleccionado);
+    }
+
+    public void rechazarES(){
+        getFechaHoraActual();
+        buscarAnalistaLogueado();
+        eventoSismicoSeleccionado.rechazar(fechaHoraActual, analistaLogueado);
+        eventosSismicoService.save(eventoSismicoSeleccionado);
+    }
+
+    public void bloquearEs(EventoSismico eventosSismico){
+        getFechaHoraActual();
+        eventosSismico.revisar(fechaHoraActual);
+        eventosSismicoService.save(eventosSismico);
     }
 
 }

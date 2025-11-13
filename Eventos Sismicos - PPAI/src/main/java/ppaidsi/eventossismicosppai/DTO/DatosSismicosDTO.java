@@ -4,6 +4,7 @@ package ppaidsi.eventossismicosppai.DTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.*;
 
 @Data
 @NoArgsConstructor
@@ -15,4 +16,5 @@ public class DatosSismicosDTO {
     private String clasificacion;
     private String origen;
     private double magnitud;
+    private List<SeriesTemporalesDTO> seriesTemporales;
 }

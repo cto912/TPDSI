@@ -41,10 +41,6 @@ public class SerieTemporal {
         this.muestraSismica = muestraSismica;
     }
 
-    public void addMuestraSismica(MuestraSismica muestraSismica){
-        this.muestraSismica.add(muestraSismica);
-    }
-
     public SeriesTemporalesDTO getDatos(){
         List<Object> muestras = new ArrayList<>();
         for (MuestraSismica muestraSismica : muestraSismica) {

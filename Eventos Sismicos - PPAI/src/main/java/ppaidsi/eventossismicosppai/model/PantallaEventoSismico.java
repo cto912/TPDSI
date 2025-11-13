@@ -21,7 +21,12 @@ public class PantallaEventoSismico {
         this.gestor = gestor;
     }
 
+
     public List<EventoSismicoDTO> opcionRegResRevMan() {
+        return habilitarPantalla();
+    }
+
+    public List<EventoSismicoDTO> habilitarPantalla(){
         return gestor.opcionRegResRevMan();
     }
 
@@ -41,6 +46,14 @@ public class PantallaEventoSismico {
         gestor.tomarOpcionCancelar();
     }
 
+    public void tomarOpcionConfirmar(DatosSismicosDTO datosSismicosDTO) {
+        gestor.tomarOpcionConfirmar(datosSismicosDTO);
+    }
+
+    public void tomarOpcionDerivar(DatosSismicosDTO datosSismicosDTO) {
+        gestor.tomarOpcionDerivarES(datosSismicosDTO);
+    }
+
     public boolean iniciarSesion(String userName, String password) {
         return gestor.iniciarSesion(userName, password);
     }
@@ -49,7 +62,4 @@ public class PantallaEventoSismico {
         gestor.cerrarSesion(userName, password);
     }
 
-    public List<SeriesTemporalesDTO> getSeriesTemporales(){
-        return gestor.recorrerSeriesTemporales();
-    }
 }

@@ -59,11 +59,6 @@ public class PantallaController {
         return ResponseEntity.ok(pantallaEventoSismico.mostarDatosSismicos());
     }
 
-    @PostMapping("/postCambios")
-    public ResponseEntity<String> recibirDatosSismicos(@RequestBody DatosSismicosDTO datosSismicoDTO) {
-        return ResponseEntity.ok("Evento recibido correctamente");
-    }
-
     @GetMapping("/getAllClasificacion")
     public ResponseEntity<List<ClasificacionSismo>> getAllClasificacion() {
         return ResponseEntity.ok(clasificacionSisimoService.getAll());
@@ -105,9 +100,17 @@ public class PantallaController {
         return ResponseEntity.ok("Ok");
     }
 
-    @GetMapping("/getSeriesTemporales")
-    public ResponseEntity<List<SeriesTemporalesDTO>> getSeriesTemporales() {
-        return ResponseEntity.ok(pantallaEventoSismico.getSeriesTemporales());
+    @PutMapping("/confirmarEvento")
+    public ResponseEntity<String> confirmarEvento(@RequestBody DatosSismicosDTO datosSismicoDTO) {
+        pantallaEventoSismico.tomarOpcionConfirmar(datosSismicoDTO);
+        return ResponseEntity.ok("ok");
     }
+
+    @PutMapping("/derivarEvento")
+    public ResponseEntity<String> derivarEvento(@RequestBody DatosSismicosDTO datosSismicoDTO) {
+        pantallaEventoSismico.tomarOpcionDerivar(datosSismicoDTO);
+        return ResponseEntity.ok("ok");
+    }
+
 
 }
