@@ -84,6 +84,7 @@ function App() {
   const [seriesTemporales, setSeriesTemporales] = useState([]);
   const [isEditingDatos, setIsEditingDatos] = useState(false);
   const [magnitudError, setMagnitudError] = useState('');
+  const [isProcessingEvent, setIsProcessingEvent] = useState(false);
 
   const hiddenColumns = ['id'];
 
@@ -165,6 +166,7 @@ function App() {
     if (selectedEvent) {
       console.log('ID del evento seleccionado:', selectedEvent.id);
       setLoadingDatos(true);
+      setIsProcessingEvent(true);
 
       try {
         await fetch('http://localhost:8080/api/pantalla/postESRev', {
@@ -212,6 +214,7 @@ function App() {
       } catch (error) {
         console.error('Error:', error);
         alert('Error al procesar la solicitud');
+        setIsProcessingEvent(false);
       } finally {
         setLoadingDatos(false);
       }
@@ -273,6 +276,7 @@ function App() {
           setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
           setIsEditingDatos(false)
           recargarEventos();
+          setIsProcessingEvent(false);
         } catch (err) {
           console.error(err);
           alert('Error al guardar los datos: ' + err.message);
@@ -297,6 +301,7 @@ function App() {
           setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
           setIsEditingDatos(false)
           recargarEventos();
+          setIsProcessingEvent(false);
         } catch (err) {
           console.error(err);
           alert('Error al guardar los datos: ' + err.message);
@@ -321,6 +326,7 @@ function App() {
           setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
           setIsEditingDatos(false)
           recargarEventos();
+          setIsProcessingEvent(false);
         } catch (err) {
           console.error(err);
           alert('Error al guardar los datos: ' + err.message);
@@ -338,6 +344,7 @@ function App() {
       setShowEditForm(false);
       setSelectedEvent(null);
       setDatosSismicos({ alcance: '', clasificacion: '', origen: ''});
+      setIsProcessingEvent(false);
       recargarEventos();
     } catch(error){
       console.error('Error al cancelar:', error);
@@ -427,40 +434,44 @@ function App() {
 
         <nav className="flex-1 p-4 space-y-2">
           <button
-            onClick={() => setCurrentView('home')}
+            onClick={() => !isProcessingEvent && setCurrentView('home')}
+            disabled={isProcessingEvent}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
               currentView === 'home' ? 'bg-blue-600' : 'hover:bg-slate-700'
-            }`}
+            } ${isProcessingEvent ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <HomeIcon />
             <span className={!menuOpen && 'hidden'}>Inicio</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('revision')}
+            onClick={() => !isProcessingEvent && setCurrentView('revision')}
+            disabled={isProcessingEvent}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
               currentView === 'revision' ? 'bg-blue-600' : 'hover:bg-slate-700'
-            }`}
+            } ${isProcessingEvent ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <FileTextIcon />
             <span className={!menuOpen && 'hidden'}>Registrar Revisión Manual</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('reportes')}
+            onClick={() => !isProcessingEvent && setCurrentView('reportes')}
+            disabled={isProcessingEvent}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
               currentView === 'reportes' ? 'bg-blue-600' : 'hover:bg-slate-700'
-            }`}
+            } ${isProcessingEvent ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <BarChartIcon />
             <span className={!menuOpen && 'hidden'}>Reportes</span>
           </button>
 
           <button
-            onClick={() => setCurrentView('configuracion')}
+            onClick={() => !isProcessingEvent && setCurrentView('configuracion')}
+            disabled={isProcessingEvent}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
               currentView === 'configuracion' ? 'bg-blue-600' : 'hover:bg-slate-700'
-            }`}
+            } ${isProcessingEvent ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <SettingsIcon />
             <span className={!menuOpen && 'hidden'}>Configuración</span>
@@ -469,8 +480,13 @@ function App() {
 
         <div className="p-4 border-t border-slate-700">
           <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 transition"
+            onClick={() => !isProcessingEvent && handleLogout()}
+            disabled={isProcessingEvent}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+              isProcessingEvent 
+              ? 'opacity-50 cursor-not-allowed bg-slate-700' 
+              : 'hover:bg-red-600'
+            }`}
           >
             <LogOutIcon />
             <span className={!menuOpen && 'hidden'}>Cerrar Sesión</span>

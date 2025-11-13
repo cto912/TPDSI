@@ -4,6 +4,8 @@ import org.springframework.stereotype.Component;
 import ppaidsi.eventossismicosppai.DTO.DatosSismicosDTO;
 import ppaidsi.eventossismicosppai.DTO.EventoSismicoDTO;
 import ppaidsi.eventossismicosppai.DTO.SeriesTemporalesDTO;
+import ppaidsi.eventossismicosppai.model.state.Estado;
+import ppaidsi.eventossismicosppai.model.state.EstadoFactory;
 import ppaidsi.eventossismicosppai.service.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +32,8 @@ public class GestorEventoSismico {
     private String userNameActual;
     private Empleado analistaLogueado;
     private int idEventoSismicoSeleccionado;
+
+    private String nombreEstadoAnterior; //SOLUCION CANCELACION DE CU
 
     public GestorEventoSismico(EventoSismicoService eventosSismicoService,
                                UsuarioService usuarioService, SesionService sesionService,
@@ -110,10 +114,19 @@ public class GestorEventoSismico {
 
     //FALTA ESTA PARTE
     public void tomarOpcionCancelar(){
+        this.eventoSismicoSeleccionado = eventosSismicoService.getById(idEventoSismicoSeleccionado);
         cancelarCU();
     }
 
     public void cancelarCU(){
+        Estado estado = EstadoFactory.crear(nombreEstadoAnterior);
+        List<CambioEstado> cambioEstadoList = eventoSismicoSeleccionado.getCambioEstado();
+        CambioEstado actual = cambioEstadoList.getLast();
+        cambioEstadoList.remove(actual);
+        CambioEstado anterior = cambioEstadoList.getLast();
+        anterior.setFechaHoraFin(null);
+        eventoSismicoSeleccionado.setEstado(estado);
+        eventosSismicoService.save(eventoSismicoSeleccionado);
     }
 
     public void validarDatos(DatosSismicosDTO datosSismicosDTO){
@@ -221,6 +234,7 @@ public class GestorEventoSismico {
                 .findFirst()
                 .orElse(null);
         assert eventoSismicoSeleccionado != null;
+        nombreEstadoAnterior = eventoSismicoSeleccionado.getEstadoNombre(); //SOLUCION CANCELACION DE CU
         bloquearEs(eventoSismicoSeleccionado);
         buscarDatosSismicos();
         List<SeriesTemporalesDTO> seriesTemporales = recorrerSeriesTemporales();
